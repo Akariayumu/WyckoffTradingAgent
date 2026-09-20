@@ -334,6 +334,19 @@ class TestComputeStopLoss:
         assert price is not None
         assert "吸筹底线" in reason
 
+    def test_atr_dynamic_stop(self):
+        cfg = FunnelConfig()
+        cfg.exit_use_atr_stop = True
+        cfg.exit_atr_multiple = 2.0
+        n = 30
+        closes = pd.Series([10.0] * n)
+        lows = pd.Series([9.5] * n)
+        highs = pd.Series([10.5] * n)
+        price, reason = _compute_stop_loss(closes, lows, highs, "Markup", cfg)
+        assert price is not None
+        assert "ATR波动率动态止损" in reason
+        assert price == 9.0
+
 
 def test_upthrust_detects_high_volume_false_breakout_and_blocks_candidate() -> None:
     cfg = FunnelConfig()
@@ -668,7 +681,7 @@ class TestSectorHeatBypass:
         assert "A2" in result
 
     def test_hot_concept_matches_normalized_aliases(self):
-        cfg = FunnelConfig()
+        cfg = FunnelConfig(use_concept_map=True)
         cfg.sector_min_count = 1
         cfg.l3_keep_strength_min = 0.0
         n = 30
@@ -701,7 +714,7 @@ class TestSectorHeatBypass:
         assert {"减速器", "机器视觉"} & set(top)
 
     def test_hot_concepts_match_normalized_theme_aliases(self):
-        cfg = FunnelConfig()
+        cfg = FunnelConfig(use_concept_map=True)
         cfg.sector_min_count = 2
         cfg.top_n_sectors = 1
         cfg.l3_hot_leader_strength_min = 0.50
