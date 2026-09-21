@@ -36,7 +36,8 @@ jobs:
       PYTHONUNBUFFERED: "1"
       FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
       TICKFLOW_API_KEY: ${{ secrets.TICKFLOW_API_KEY }}
-      TICKFLOW_KLINE_RATE_LIMIT_PER_MIN: "110"
+      # 按 TickFlow 套餐额度调：批量与单只共用此计数，仓库变量未设置时沿用上游的 110。
+      TICKFLOW_KLINE_RATE_LIMIT_PER_MIN: ${{ vars.TICKFLOW_KLINE_RATE_LIMIT_PER_MIN || '110' }}
       TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
       TUSHARE_API_URL: ${{ vars.TUSHARE_API_URL }}
       TZ: Asia/Shanghai

@@ -41,7 +41,8 @@ jobs:
       SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       SUPABASE_USER_ID: ${{ secrets.SUPABASE_USER_ID }}
-      TICKFLOW_KLINE_RATE_LIMIT_PER_MIN: "110"
+      # 按 TickFlow 套餐额度调：批量与单只共用此计数，仓库变量未设置时沿用上游的 110。
+      TICKFLOW_KLINE_RATE_LIMIT_PER_MIN: ${{ vars.TICKFLOW_KLINE_RATE_LIMIT_PER_MIN || '110' }}
       FUNNEL_EXECUTOR_MODE: "thread"
       FUNNEL_MAX_WORKERS: "4"
       FUNNEL_BATCH_SIZE: "200"

@@ -28,7 +28,8 @@ jobs:
       FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
       TICKFLOW_API_KEY: ${{ secrets.TICKFLOW_API_KEY }}
       # TickFlow 日K批量上限为 120/min、200标的/次；主漏斗优先走批量接口。
-      TICKFLOW_KLINE_RATE_LIMIT_PER_MIN: "110"
+      # 按 TickFlow 套餐额度调：批量与单只共用此计数，仓库变量未设置时沿用上游的 110。
+      TICKFLOW_KLINE_RATE_LIMIT_PER_MIN: ${{ vars.TICKFLOW_KLINE_RATE_LIMIT_PER_MIN || '110' }}
       FUNNEL_EXECUTOR_MODE: "thread"
       FUNNEL_MAX_WORKERS: "4"
       FUNNEL_BATCH_SIZE: "200"
