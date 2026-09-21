@@ -660,7 +660,7 @@ describe('execScreenStocks', () => {
     expect(result.strategy_policy?.selection_action_summary).toContain('candidate_lane=trend_pullback')
   })
 
-  it('attaches latest strategy policy evidence from shadow attribution runs', async () => {
+  it('attaches latest strategy policy evidence from attribution reports', async () => {
     const deps = createMockDeps({
       recommendation_tracking: [
         {
@@ -674,9 +674,9 @@ describe('execScreenStocks', () => {
           is_ai_recommended: true,
         },
       ],
-      signal_policy_shadow_runs: [
+      strategy_attribution_reports: [
         {
-          trade_date: '2026-07-04',
+          report_date: '2026-07-04',
           shadow_diff_stats_json: {
             policy_governor: { horizon: '5', next_action: 'review_policy_actions' },
             policy_execution_state: { funnel_dynamic_policy: 'shadow' },
@@ -704,6 +704,8 @@ describe('execScreenStocks', () => {
     expect(result.strategy_policy?.policy_weight_active_scope).toBe('漏斗shadow')
     expect(result.strategy_policy?.selection_action_summary).toContain('candidate_lane=trend_pullback')
     expect(result.strategy_policy?.attribution_signal_weights).toEqual({ trend_pullback: 0.75 })
+    expect(deps.supabase.from).toHaveBeenCalledWith('strategy_attribution_reports')
+    expect(deps.supabase.from).not.toHaveBeenCalledWith('signal_policy_shadow_runs')
   })
 
   it('keeps optional strategy policy evidence in strategy decision output schema', () => {
@@ -730,7 +732,7 @@ describe('execStrategyDecision', () => {
     const deps = createMockDeps({
       portfolio_positions: [],
       market_signal_daily: { benchmark_regime: 'RISK_ON' },
-      signal_policy_shadow_runs: [
+      strategy_attribution_reports: [
         {
           shadow_diff_stats_json: {
             policy_governor: { horizon: '5', next_action: 'review_policy_actions' },
@@ -765,7 +767,7 @@ describe('execStrategyDecision', () => {
     const deps = createMockDeps({
       portfolio_positions: [{ code: '600519', name: '贵州茅台', shares: 100, cost_price: 1800, stop_loss: 1700 }],
       market_signal_daily: { benchmark_regime: 'RISK_ON', main_index_close: 4000 },
-      signal_policy_shadow_runs: [
+      strategy_attribution_reports: [
         {
           shadow_diff_stats_json: {
             policy_governor: { horizon: '5', next_action: 'review_policy_actions' },
@@ -816,7 +818,7 @@ describe('execGenerateAiReport', () => {
   it('adds strategy policy context to the report and prompt', async () => {
     const deps = createMockDeps({
       user_settings: { tickflow_api_key: ' tf-test ', tushare_token: '' },
-      signal_policy_shadow_runs: [
+      strategy_attribution_reports: [
         {
           shadow_diff_stats_json: {
             policy_governor: { horizon: '5', next_action: 'review_policy_actions' },

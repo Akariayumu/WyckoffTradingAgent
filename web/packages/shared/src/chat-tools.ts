@@ -1313,11 +1313,12 @@ export async function execScreenStocks(deps: ToolDeps): Promise<ScreenResult> {
 
 async function fetchLatestStrategyPolicy(deps: ToolDeps): Promise<ScreenStrategyPolicy | null> {
   try {
+    // 策略治理证据在归因报告里（与 agents/history_tools.py 同源）；影子运行表没有这两列。
     const { data } = await deps.supabase
-      .from('signal_policy_shadow_runs')
-      .select('trade_date,market,shadow_diff_stats_json,recommendations_json')
+      .from('strategy_attribution_reports')
+      .select('report_date,market,shadow_diff_stats_json,recommendations_json')
       .eq('market', 'cn')
-      .order('trade_date', { ascending: false })
+      .order('report_date', { ascending: false })
       .limit(1)
     return strategyPolicyFromRow(Array.isArray(data) ? data[0] : null)
   } catch {
