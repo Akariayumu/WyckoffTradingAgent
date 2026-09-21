@@ -36,6 +36,7 @@ jobs:
       PYTHONUNBUFFERED: "1"
       WYCKOFF_WRITE_CONTEXT: "server_job"
       TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+      TUSHARE_API_URL: ${{ vars.TUSHARE_API_URL }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
       EFFICIENCY_API_KEY: ${{ secrets.EFFICIENCY_API_KEY }}

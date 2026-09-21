@@ -34,6 +34,7 @@ jobs:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       SUPABASE_USER_ID: ${{ secrets.SUPABASE_USER_ID }}
       TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+      TUSHARE_API_URL: ${{ vars.TUSHARE_API_URL }}
       HOLDING_DIAG_PORTFOLIO_ID: ${{ secrets.HOLDING_DIAG_PORTFOLIO_ID }}
 
     steps:

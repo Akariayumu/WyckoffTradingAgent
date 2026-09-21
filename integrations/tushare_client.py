@@ -77,9 +77,25 @@ def get_pro():
         )
         import tushare as ts
 
-        return _RateLimitedPro(ts.pro_api(token))
+        pro = ts.pro_api(token)
+        _apply_api_url(pro)
+        return _RateLimitedPro(pro)
     except ImportError:
         return None
+
+
+def _apply_api_url(pro) -> None:
+    """TUSHARE_API_URL 非空时把请求改发到该地址（Tushare 兼容的中转服务），否则保持 SDK 默认。
+
+    SDK 没有公开的设置入口，只能改名称改写后的私有属性 ``DataApi.__http_url``；
+    请求地址为 ``f"{url}/{api_name}"``，按原样使用配置值。
+    """
+    api_url = os.getenv("TUSHARE_API_URL", "").strip()
+    if not api_url:
+        return
+    if not api_url.startswith("https://"):
+        raise ValueError("TUSHARE_API_URL 必须是 https 地址")
+    pro._DataApi__http_url = api_url
 
 
 _runtime_token: ContextVar[str] = ContextVar("wyckoff_tushare_token", default="")

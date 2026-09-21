@@ -47,6 +47,7 @@ jobs:
       PYTHONUNBUFFERED: "1"
       # 只读全市场日线，不写库；故不设 WYCKOFF_WRITE_CONTEXT。
       TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+      TUSHARE_API_URL: ${{ vars.TUSHARE_API_URL }}
       FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
       TZ: Asia/Shanghai
 

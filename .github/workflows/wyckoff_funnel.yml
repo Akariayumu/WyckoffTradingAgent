@@ -66,6 +66,7 @@ jobs:
       EFFICIENCY_MODEL: ${{ secrets.EFFICIENCY_MODEL }}
       EFFICIENCY_BASE_URL: ${{ secrets.EFFICIENCY_BASE_URL }}
       TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+      TUSHARE_API_URL: ${{ vars.TUSHARE_API_URL }}
       MY_PORTFOLIO_STATE: ${{ secrets.MY_PORTFOLIO_STATE }}
       TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
       TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}

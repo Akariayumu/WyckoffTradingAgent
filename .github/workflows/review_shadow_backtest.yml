@@ -68,6 +68,7 @@ jobs:
     env:
       PYTHONUNBUFFERED: "1"
       TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+      TUSHARE_API_URL: ${{ vars.TUSHARE_API_URL }}
       TICKFLOW_API_KEY: ${{ secrets.TICKFLOW_API_KEY }}
       TZ: Asia/Shanghai
 

@@ -41,6 +41,7 @@ jobs:
       SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+      TUSHARE_API_URL: ${{ vars.TUSHARE_API_URL }}
       SIGNAL_REGISTRY_HORIZON: "5"
       WYCKOFF_STRATEGY_REFLECTION: ${{ vars.WYCKOFF_STRATEGY_REFLECTION || 'shadow' }}
       TZ: Asia/Shanghai

@@ -103,6 +103,7 @@ jobs:
       TICKFLOW_API_KEY: ${{ secrets.TICKFLOW_API_KEY }}
       TICKFLOW_BASE_URL: ${{ secrets.TICKFLOW_BASE_URL }}
       TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+      TUSHARE_API_URL: ${{ vars.TUSHARE_API_URL }}
       BACKTEST_SNAPSHOT_WORKERS: "6"
     steps:
       - uses: actions/checkout@v7
