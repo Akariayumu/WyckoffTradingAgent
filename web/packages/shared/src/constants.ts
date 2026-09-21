@@ -44,6 +44,25 @@ export const ALLOWED_PROXY_TARGET_ORIGINS = [
   'https://ark.cn-beijing.volces.com',
 ] as const
 
+export const TUSHARE_OFFICIAL_ORIGIN = 'https://api.tushare.pro'
+
+/**
+ * 代理实际请求的上游地址。部署配置了 TUSHARE_API_URL（Tushare 兼容的中转服务）时，
+ * 发往官方 Tushare 的请求改投该地址；其余目标原样返回。配置不是合法 https 地址时返回 null。
+ * 地址只来自服务端环境变量，不接受客户端指定，白名单约束不变。
+ */
+export function resolveProxyUpstream(target: URL, tushareApiUrl?: string | null): URL | null {
+  if (target.origin !== TUSHARE_OFFICIAL_ORIGIN) return target
+  const configured = String(tushareApiUrl || '').trim()
+  if (!configured) return target
+  try {
+    const url = new URL(configured)
+    return url.protocol === 'https:' ? url : null
+  } catch {
+    return null
+  }
+}
+
 const ALLOWED_MODEL_BASE_URL_SET = new Set(ALLOWED_MODEL_BASE_URLS.map(normalizeBaseUrl))
 const ALLOWED_MODEL_ORIGINS = new Set([
   'https://api.1route.dev',

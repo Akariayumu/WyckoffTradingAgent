@@ -1,7 +1,7 @@
 import {
   normalizeGeminiStream,
 } from '../../../packages/shared/src/gemini-sse-normalize'
-import { ALLOWED_PROXY_TARGET_ORIGINS } from '../../../packages/shared/src/constants'
+import { ALLOWED_PROXY_TARGET_ORIGINS, resolveProxyUpstream } from '../../../packages/shared/src/constants'
 
 const DEFAULT_ALLOWED_ORIGINS = [
   'https://wyckoff-analysis.pages.dev',
@@ -10,7 +10,7 @@ const DEFAULT_ALLOWED_ORIGINS = [
   'http://127.0.0.1:5173',
 ]
 
-type LlmProxyEnv = { CORS_ALLOWED_ORIGINS?: string }
+type LlmProxyEnv = { CORS_ALLOWED_ORIGINS?: string; TUSHARE_API_URL?: string }
 
 // 自部署：同源请求（自己的 Pages 域名）总是允许，另可用 CORS_ALLOWED_ORIGINS 追加逗号分隔的来源。
 function allowedOrigins(request: Request, env: LlmProxyEnv | undefined): Set<string> {
@@ -115,9 +115,14 @@ export const onRequest: PagesFunction<LlmProxyEnv> = async (context) => {
     return Response.json({ error: 'X-Target-URL is not allowed' }, { status: 403, headers: cors })
   }
 
+  const upstream = resolveProxyUpstream(target, context.env?.TUSHARE_API_URL)
+  if (!upstream) {
+    return Response.json({ error: 'TUSHARE_API_URL must be an https URL' }, { status: 500, headers: cors })
+  }
+
   const url = new URL(request.url)
   const proxyPath = url.pathname.replace('/api/llm-proxy', '')
-  const dest = joinTargetUrl(target, proxyPath, url.search)
+  const dest = joinTargetUrl(upstream, proxyPath, url.search)
   const contentLength = Number(request.headers.get('content-length') || '0')
   if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
     return Response.json({ error: 'Request body is too large' }, { status: 413, headers: cors })

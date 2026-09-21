@@ -23,6 +23,7 @@ import {
   resolveSessionClock,
   selectMarketWatchCodes,
   ALLOWED_PROXY_TARGET_ORIGINS,
+  resolveProxyUpstream,
   normalizeGeminiStream,
   removeSupersededToolApprovals,
   sanitizeMessagesForChatTransport,
@@ -90,7 +91,7 @@ export function createChatRoutes(sandboxToolsBuilder: SandboxToolsBuilder = asyn
       execute: ({ writer }) => runChatWithResilience({
         writer,
         configs,
-        deps: createToolDeps(supabase),
+        deps: createToolDeps(supabase, c.env),
         userId: auth.userId,
         accessToken: auth.accessToken,
         messages,
@@ -183,8 +184,8 @@ function getEnvValue(env: Env, key: 'SUPABASE_URL' | 'SUPABASE_ANON_KEY'): strin
   return value
 }
 
-function createToolDeps(supabase: ToolDeps['supabase']): ToolDeps {
-  return { supabase, fetch: createToolFetch(), generateText }
+function createToolDeps(supabase: ToolDeps['supabase'], env: Pick<Env, 'TUSHARE_API_URL'>): ToolDeps {
+  return { supabase, fetch: createToolFetch(env), generateText }
 }
 
 function createProviderFetch(reasoningLevel?: DeepSeekReasoningLevel): typeof globalThis.fetch {
@@ -206,14 +207,16 @@ function createProviderFetch(reasoningLevel?: DeepSeekReasoningLevel): typeof gl
   }
 }
 
-function createToolFetch(): typeof globalThis.fetch {
+export function createToolFetch(env: Pick<Env, 'TUSHARE_API_URL'>): typeof globalThis.fetch {
   return async (input, init) => {
     const requestUrl = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
     if (!requestUrl.startsWith('/api/llm-proxy')) return globalThis.fetch(input, init)
     const target = normalizeTargetUrl(new Headers(init?.headers).get('X-Target-URL') || '')
     if (!target) return Response.json({ error: 'X-Target-URL is not allowed' }, { status: 403 })
+    const upstream = resolveProxyUpstream(target, env.TUSHARE_API_URL)
+    if (!upstream) return Response.json({ error: 'TUSHARE_API_URL must be an https URL' }, { status: 500 })
     const url = new URL(requestUrl, 'https://wyckoff.local')
-    const destination = `${target.href.replace(/\/$/, '')}${url.pathname.replace('/api/llm-proxy', '')}${url.search}`
+    const destination = `${upstream.href.replace(/\/$/, '')}${url.pathname.replace('/api/llm-proxy', '')}${url.search}`
     return globalThis.fetch(destination, { ...init, headers: forwardProxyHeaders(init?.headers) })
   }
 }

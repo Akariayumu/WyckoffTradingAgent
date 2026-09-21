@@ -35,6 +35,8 @@ export type Env = {
   MEMBERSHIP_MODE?: string
   /** 逗号分隔的额外 CORS 来源，例如自己的 Pages 域名。 */
   CORS_ALLOWED_ORIGINS?: string
+  /** 可选：Tushare 兼容中转地址（https），读盘室工具发往官方 Tushare 的请求改投此处。 */
+  TUSHARE_API_URL?: string
 }
 
 export type RuntimeReadinessCheck = (env: Env) => string[]

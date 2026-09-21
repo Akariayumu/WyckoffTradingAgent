@@ -131,11 +131,17 @@ async function tryTushareSnapshot(fetcher: Fetcher, code: string, token: string)
     const items = json?.data?.items
     const fieldNames = json?.data?.fields
     if (!Array.isArray(items) || !Array.isArray(fieldNames) || items.length === 0) return null
-    const row = items[0]!
-    return normalizeFinancialRecord(Object.fromEntries(fieldNames.map((field, index) => [field, row[index]])), tsCode)
+    const records = items.map((row) => Object.fromEntries(fieldNames.map((field, index) => [field, row[index]])))
+    return normalizeFinancialRecord(latestFinancialRecord(records), tsCode)
   } catch {
     return null
   }
+}
+
+/** 按报告期取最新一条（同期取公告最晚的）：官方按报告期倒序返回，部分兼容中转按正序返回，不能取第一行。 */
+function latestFinancialRecord(records: Record<string, unknown>[]): Record<string, unknown> {
+  const sortKey = (record: Record<string, unknown>) => `${String(record.end_date ?? '')}|${String(record.ann_date ?? '')}`
+  return records.reduce((latest, record) => (sortKey(record) > sortKey(latest) ? record : latest))
 }
 
 async function tusharePostWithFetch(

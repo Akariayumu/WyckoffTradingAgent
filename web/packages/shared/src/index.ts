@@ -9,6 +9,7 @@ export {
   TABLE_NAMES,
   isAllowedModelBaseUrl,
   isSafeProviderBaseUrl,
+  resolveProxyUpstream,
 } from './constants'
 export type { Provider } from './constants'
 export {
