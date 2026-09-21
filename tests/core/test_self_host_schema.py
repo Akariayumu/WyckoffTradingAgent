@@ -109,9 +109,11 @@ def test_ddl_enables_rls_everywhere_and_is_transactional() -> None:
 
     for table, access in self_host_schema.table_access().items():
         assert f"alter table public.{table} enable row level security;" in ddl
-        assert f"revoke all on table public.{table} from anon;" in ddl
+        assert f"revoke all on table public.{table} from anon, authenticated;" in ddl
+        assert f"grant all on table public.{table} to service_role;" in ddl
         if access == self_host_schema.SERVICE_ONLY:
             assert f"on public.{table} for" not in ddl
+            assert f"on table public.{table} to authenticated" not in ddl
     assert ddl.startswith("-- ") and "\nbegin;\n" in ddl
     assert ddl.rstrip().endswith("commit;")
     assert "drop table" not in ddl.lower()
@@ -125,6 +127,15 @@ def test_portfolio_policies_isolate_by_user_live_suffix() -> None:
         assert f"create policy {table}_all_own on public.{table} for all to authenticated" in ddl
     assert ddl.count(f"using ({owner})") == 4
     assert ddl.count(f"with check ({owner})") == 2
+
+
+def test_authenticated_grants_match_access_mode() -> None:
+    ddl = self_host_schema.build_ddl()
+
+    assert "grant select on table public.planet_members to authenticated;" in ddl
+    assert "grant select, insert, update, delete on table public.portfolios to authenticated;" in ddl
+    assert "grant select on table public.recommendation_tracking to authenticated;" in ddl
+    assert "grant usage, select on all sequences in schema public to service_role;" in ddl
 
 
 def test_membership_and_settings_rows_are_private() -> None:

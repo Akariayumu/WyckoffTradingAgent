@@ -784,14 +784,41 @@ def _policy_statements(table: str, access: str) -> list[str]:
     raise ValueError(f"unknown access mode {access!r} for {table}")
 
 
+# 显式授权而不依赖 Supabase 的默认权限：新项目可以关闭「新表自动暴露给 Data API」，
+# 那时没有 grant 的表对 authenticated / service_role 一律 permission denied。
+_AUTHENTICATED_PRIVILEGES = {
+    OWN_USER_READ: "select",
+    OWN_USER_ALL: "select, insert, update, delete",
+    ACTIVITY_EVENTS: "select, insert",
+    ACTIVITY_DAILY: "select, insert, update",
+    PORTFOLIO_ALL: "select, insert, update, delete",
+    PORTFOLIO_READ: "select",
+    SHARED_READ: "select",
+    SERVICE_ONLY: "",
+}
+
+
+def _grant_statements(table: str, access: str) -> list[str]:
+    lines = [
+        f"revoke all on table public.{table} from anon, authenticated;",
+        f"grant all on table public.{table} to service_role;",
+    ]
+    privileges = _AUTHENTICATED_PRIVILEGES[access]
+    if privileges:
+        lines.append(f"grant {privileges} on table public.{table} to authenticated;")
+    return lines
+
+
 def _rls_block(access_map: dict[str, str]) -> str:
     lines = [
         "-- RLS：未列出的角色与操作一律拒绝；service_role 绕过 RLS，供定时任务写库。",
     ]
     for table, access in access_map.items():
         lines.append(f"alter table public.{table} enable row level security;")
-        lines.append(f"revoke all on table public.{table} from anon;")
+        lines.extend(_grant_statements(table, access))
         lines.extend(_policy_statements(table, access))
+    # factor_ic_daily 等已有模块用 bigserial，service_role 插入需要序列权限。
+    lines.append("grant usage, select on all sequences in schema public to service_role;")
     return "\n".join(lines)
 
 
