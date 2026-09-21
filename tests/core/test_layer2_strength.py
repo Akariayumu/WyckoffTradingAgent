@@ -12,8 +12,12 @@ from core.layer2_strength import (
     Layer2SymbolState,
     RpsContext,
     _benchmark_regime_gate_passed,
+    _diagnose_accum_track,
+    _diagnose_markup_track,
     _diagnose_momentum,
+    _diagnose_sos,
     _layer2_channels,
+    _sos_channel_ok,
     accum_track_ok,
     build_benchmark_context,
     build_rps_context,
@@ -505,3 +509,137 @@ def test_evaluate_layer2_symbol_blocks_when_regime_gate_fails() -> None:
         detect_sos=lambda d, c: None,
     )
     assert "大盘处于MA50空头生命线下方(市场门控拦截)" in diag
+
+
+def test_diagnose_layer2_symbol_failure_two_track_mode() -> None:
+    cfg = FunnelConfig(
+        enable_two_track_mode=True,
+        markup_track_bias_200_max=0.30,
+        accum_track_price_from_low_max=0.20,
+    )
+    bench_ctx = BenchmarkContext(sorted_df=None, latest_date=None, dropping=False, regime_gate_passed=True)
+    rps_ctx = RpsContext(fast={}, slow={}, active=False)
+
+    # 1. Markup track closest: MA200 bias = (15.0 - 11.25)/11.25 = 33.33% > 30% (gap 11.1%)
+    df_markup = pd.DataFrame({"close": [10.0] * 200 + [15.0] * 50, "volume": [1000.0] * 250})
+    rps_state_markup = Layer2RpsState(None, None, True, True, True, 0.0)
+    diag_markup = diagnose_layer2_symbol_failure(
+        "600000",
+        df_markup,
+        cfg,
+        bench_ctx=bench_ctx,
+        rps_ctx=rps_ctx,
+        rps_state=rps_state_markup,
+        momentum_rs_ok=True,
+        ambush_rs_ok=True,
+        detect_sos=lambda d, c: None,
+    )
+    assert diag_markup == "最接近轨道[趋势主升轨](缺口11.1%): 偏离MA200过高: 当前 33.3%, 上限 30.0%"
+
+    # 2. Accum track closest: price from low = (12.5 - 10.0)/10.0 = 25% > 20% (gap 25.0%)
+    df_accum = pd.DataFrame({"close": [10.0] * 200 + [12.5] * 50, "volume": [100.0] * 250})
+    rps_state_accum = Layer2RpsState(None, None, False, False, False, 0.0)
+    diag_accum = diagnose_layer2_symbol_failure(
+        "600001",
+        df_accum,
+        cfg,
+        bench_ctx=bench_ctx,
+        rps_ctx=rps_ctx,
+        rps_state=rps_state_accum,
+        momentum_rs_ok=False,
+        ambush_rs_ok=False,
+        detect_sos=lambda d, c: None,
+    )
+    assert diag_accum == "最接近轨道[底部蓄势轨](缺口25.0%): 偏离低位过高: 当前 25.0%, 上限 20.0%"
+
+
+def test_diagnose_layer2_symbol_failure_ignores_disabled_channels() -> None:
+    cfg = FunnelConfig(
+        enable_two_track_mode=False,
+        enable_rs_divergence_channel=False,
+        enable_breakout_accel_channel=False,
+    )
+    closes = [10.0] * 100
+    df = pd.DataFrame({"close": closes, "volume": [1000.0] * 100})
+    bench_ctx = BenchmarkContext(sorted_df=None, latest_date=None, dropping=False, regime_gate_passed=True)
+    rps_ctx = RpsContext(fast={}, slow={}, active=False)
+    rps_state = Layer2RpsState(None, None, False, False, True, 0.0)
+
+    diag = diagnose_layer2_symbol_failure(
+        "600000",
+        df,
+        cfg,
+        bench_ctx=bench_ctx,
+        rps_ctx=rps_ctx,
+        rps_state=rps_state,
+        momentum_rs_ok=False,
+        ambush_rs_ok=False,
+        detect_sos=lambda d, c: None,
+    )
+    assert "暗中护盘" not in diag
+    assert "加速突破" not in diag
+
+
+def test_diagnose_sos_reports_disabled_when_attribute_missing() -> None:
+    cfg_no_sos = SimpleNamespace()
+    df = pd.DataFrame({"close": [10.0] * 10, "volume": [1000.0] * 10})
+    rps_ctx = RpsContext(fast={}, slow={}, active=False)
+    gap, reasons = _diagnose_sos(cfg_no_sos, df, rps_ctx, rps_slow=None, detect_sos=lambda d, c: None)
+    assert gap == 999.0
+    assert "通道未启用" in reasons
+
+
+def test_layer2_channels_and_diagnose_consistency() -> None:
+    """验证生产通道判定与诊断函数严格一致：生产判定 True ⇔ 诊断缺口 0.0。"""
+    cfg_tt = FunnelConfig(
+        enable_two_track_mode=True,
+        markup_track_bias_200_max=0.30,
+        accum_track_price_from_low_max=0.35,
+    )
+    df = pd.DataFrame({"close": [10.0] * 30, "volume": [1000.0] * 30})
+    state_ok = Layer2SymbolState(
+        close=pd.Series([10.0] * 30),
+        last_close=11.0,
+        last_ma_short=10.5,
+        last_ma_long=10.0,
+        bullish_alignment=True,
+        holding_ma20=True,
+    )
+    rps_ok = Layer2RpsState(fast=80.0, slow=80.0, momentum_ok=True, ambush_ok=True)
+
+    # 1. 两轨制：主升轨通过 ⇔ 缺口为 0.0
+    assert markup_track_ok(df, state_ok, cfg_tt, rps_ok) is True
+    gap, reasons = _diagnose_markup_track(cfg_tt, state_ok, df, rps_ok)
+    assert gap == 0.0 and reasons == []
+
+    # 主升轨未通过 ⇔ 缺口 > 0.0
+    rps_fail = Layer2RpsState(fast=40.0, slow=40.0, momentum_ok=False, ambush_ok=False)
+    assert markup_track_ok(df, state_ok, cfg_tt, rps_fail) is False
+    gap, reasons = _diagnose_markup_track(cfg_tt, state_ok, df, rps_fail)
+    assert gap > 0.0 and len(reasons) > 0
+
+    # 2. 两轨制：蓄势轨通过 ⇔ 缺口为 0.0
+    state_accum = Layer2SymbolState(
+        close=pd.Series([10.0] * 50 + [12.0] * 50),
+        last_close=12.0,
+        last_ma_short=11.5,
+        last_ma_long=11.0,
+        bullish_alignment=True,
+        holding_ma20=True,
+    )
+    df_accum = pd.DataFrame({"close": [10.0] * 50 + [12.0] * 50, "volume": [1000.0] * 95 + [200.0] * 5})
+    assert accum_track_ok(df_accum, state_accum, cfg_tt) is True
+    gap, reasons = _diagnose_accum_track(cfg_tt, state_accum, df_accum)
+    assert gap == 0.0 and reasons == []
+
+    # 3. 八通道：点火破局通道通过 ⇔ 缺口为 0.0
+    rps_ctx = RpsContext(fast={}, slow={}, active=True)
+    sos_passed = _sos_channel_ok(df, cfg_tt, rps_active=True, rps_slow=80.0, detect_sos=lambda d, c: 10.0)
+    assert sos_passed is True
+    gap, reasons = _diagnose_sos(cfg_tt, df, rps_ctx, rps_slow=80.0, detect_sos=lambda d, c: 10.0)
+    assert gap == 0.0 and reasons == []
+
+    sos_rejected = _sos_channel_ok(df, cfg_tt, rps_active=True, rps_slow=80.0, detect_sos=lambda d, c: None)
+    assert sos_rejected is False
+    gap, reasons = _diagnose_sos(cfg_tt, df, rps_ctx, rps_slow=80.0, detect_sos=lambda d, c: None)
+    assert gap > 0.0 and "未形成放量突破阻力的SOS结构" in reasons
