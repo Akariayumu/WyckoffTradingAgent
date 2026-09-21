@@ -5,7 +5,7 @@ describe('planet membership middleware lookup', () => {
   it('reads the planet_members contract and accepts an active member', async () => {
     const query = mockQuery({ data: [{ expires_on: '2999-12-31' }], error: null })
 
-    await expect(isActivePlanetMember(query.client as never, 'user-1')).resolves.toBe(true)
+    await expect(isActivePlanetMember(query.client as never, 'user-1', {})).resolves.toBe(true)
     expect(query.from).toHaveBeenCalledWith('planet_members')
     expect(query.select).toHaveBeenCalledWith('expires_on')
     expect(query.eq).toHaveBeenCalledWith('user_id', 'user-1')
@@ -20,7 +20,23 @@ describe('planet membership middleware lookup', () => {
       { data: null, error: { message: 'denied' } },
     ]
     for (const result of cases) {
-      await expect(isActivePlanetMember(mockQuery(result).client as never, 'user-1')).resolves.toBe(false)
+      await expect(isActivePlanetMember(mockQuery(result).client as never, 'user-1', {})).resolves.toBe(false)
+    }
+  })
+
+  it('treats every signed-in user as a member without querying when MEMBERSHIP_MODE=off', async () => {
+    for (const mode of ['off', ' OFF ']) {
+      const query = mockQuery({ data: [], error: null })
+      await expect(isActivePlanetMember(query.client as never, 'user-1', { MEMBERSHIP_MODE: mode })).resolves.toBe(true)
+      expect(query.from).not.toHaveBeenCalled()
+    }
+  })
+
+  it('keeps enforcing membership for any other MEMBERSHIP_MODE value', async () => {
+    for (const mode of [undefined, '', 'on', 'false', '0']) {
+      const query = mockQuery({ data: [], error: null })
+      await expect(isActivePlanetMember(query.client as never, 'user-1', { MEMBERSHIP_MODE: mode })).resolves.toBe(false)
+      expect(query.from).toHaveBeenCalledWith('planet_members')
     }
   })
 })

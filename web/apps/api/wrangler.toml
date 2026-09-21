@@ -15,13 +15,17 @@ invocation_logs = true
 ENVIRONMENT = "production"
 CHAT_DAILY_LIMIT_PER_USER = "80"
 CHAT_MIN_INTERVAL_MS = "2500"
-AGENT_SANDBOX_ENABLED = "true"
+# 自部署：off 时跳过星球会员校验（仍要求登录）；删掉或设为其他值恢复会员限制。
+MEMBERSHIP_MODE = "off"
+# 自建 sandbox bridge 上线并配好 SANDBOX_BRIDGE_URL/SECRET 后再改回 "true"。
+AGENT_SANDBOX_ENABLED = "false"
 AGENT_SANDBOX_TIMEOUT_MS = "60000"
 AGENT_RUN_TTL_SECONDS = "3600"
 AGENT_RUN_DAILY_LIMIT_PER_USER = "20"
 AGENT_RUN_DAILY_CPU_LIMIT_MS = "120000"
 AGENT_RUN_MIN_INTERVAL_MS = "10000"
-SANDBOX_BRIDGE_URL = "https://wyckoff-agent-sandbox.vercel.app/api/sandbox-run"
+# SANDBOX_BRIDGE_URL 指向自己的 bridge（必须 HTTPS），原值是作者的 Vercel 部署。
+SANDBOX_BRIDGE_URL = ""
 
 [[durable_objects.bindings]]
 name = "AGENT_RUN_NOTIFIER"

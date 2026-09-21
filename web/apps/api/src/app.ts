@@ -31,6 +31,10 @@ export type Env = {
   REMOTE_RELAY?: DurableObjectNamespace
   SANDBOX_BRIDGE_URL?: string
   SANDBOX_BRIDGE_SECRET?: string
+  /** 'off' 时跳过星球会员校验（自部署用），登录鉴权不受影响。 */
+  MEMBERSHIP_MODE?: string
+  /** 逗号分隔的额外 CORS 来源，例如自己的 Pages 域名。 */
+  CORS_ALLOWED_ORIGINS?: string
 }
 
 export type RuntimeReadinessCheck = (env: Env) => string[]
@@ -41,16 +45,7 @@ export function createApiApp(readinessCheck: RuntimeReadinessCheck = () => []) {
   app.use('*', requestId({ limitLength: 128 }))
   app.use('*', secureHeaders())
   app.use('*', cors({
-    origin: [
-      'http://localhost:5173',
-      'http://localhost:5174',
-      'http://localhost:5175',
-      'http://127.0.0.1:5173',
-      'http://127.0.0.1:5174',
-      'http://127.0.0.1:5175',
-      'https://wyckoff-analysis.pages.dev',
-      'https://wyckoff.pages.dev',
-    ],
+    origin: (origin, c) => (allowedOrigins(c.env).includes(origin) ? origin : null),
     credentials: true,
   }))
   app.use('/api/*', bodyLimit({
@@ -70,4 +65,20 @@ export function createApiApp(readinessCheck: RuntimeReadinessCheck = () => []) {
       : c.json({ status: 'unhealthy', missing }, 503)
   })
   return app
+}
+
+const DEFAULT_ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+  'http://127.0.0.1:5175',
+  'https://wyckoff-analysis.pages.dev',
+  'https://wyckoff.pages.dev',
+]
+
+export function allowedOrigins(env: Pick<Env, 'CORS_ALLOWED_ORIGINS'> | undefined): string[] {
+  const extra = (env?.CORS_ALLOWED_ORIGINS || '').split(',').map((value) => value.trim().replace(/\/+$/, '')).filter(Boolean)
+  return [...DEFAULT_ALLOWED_ORIGINS, ...extra]
 }

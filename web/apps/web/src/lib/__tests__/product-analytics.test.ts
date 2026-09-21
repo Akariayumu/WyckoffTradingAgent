@@ -23,11 +23,12 @@ describe('product analytics installers', () => {
     expect(doc.getElementById('ms-clarity')).toBeUndefined()
   })
 
-  it('uses the production Clarity project when no env override is set', () => {
+  it('does not load Clarity when no project id is configured', () => {
     const doc = fakeDocument()
     const win = {} as Window
     installPlanetMemberClarity('user-1', doc as unknown as Document, win)
-    expect(doc.getElementById('ms-clarity')?.src).toContain('clarity.ms/tag/y6albpfin1')
+    expect(doc.getElementById('ms-clarity')).toBeUndefined()
+    expect((win as Window & { clarity?: unknown }).clarity).toBeUndefined()
   })
 
   it('loads Clarity only once and identifies the planet member', () => {

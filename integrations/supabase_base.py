@@ -68,7 +68,7 @@ def _client_options():
     return ClientOptions(httpx_client=_timeout_client())
 
 
-def _resolve_credentials() -> tuple[str, str]:
+def resolve_credentials() -> tuple[str, str]:
     """解析 Supabase URL 和 Key，统一回退链：环境变量 → 内置 anon key。"""
     url = os.getenv("SUPABASE_URL", "").strip()
     key = os.getenv("SUPABASE_KEY", "").strip()
@@ -103,7 +103,7 @@ def create_anon_client() -> Client:
     """Anon-key 客户端（RLS 保护）。"""
     from supabase import create_client
 
-    url, key = _resolve_credentials()
+    url, key = resolve_credentials()
     if not url or not key:
         raise ValueError("Missing Supabase credentials. Please set SUPABASE_URL and SUPABASE_KEY.")
     return create_client(url, key, options=_client_options())
@@ -139,7 +139,7 @@ def create_user_client(access_token: str, refresh_token: str = "") -> Client:
     """
     from supabase import create_client
 
-    url, key = _resolve_credentials()
+    url, key = resolve_credentials()
     if not url or not key:
         raise ValueError("SUPABASE_URL / SUPABASE_KEY 未配置")
     client = create_client(url, key, options=_client_options())
@@ -198,7 +198,7 @@ def is_admin_configured() -> bool:
 
     说明：
     - 这里用于判断“是否完成业务级配置”，不应把内置 anon 凭据视为“已配置”。
-    - 因此不走 _resolve_credentials()（该函数会回退到内置 anon）。
+    - 因此不走 resolve_credentials()（该函数会回退到内置 anon）。
     """
     url = os.getenv("SUPABASE_URL", "").strip()
     key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()

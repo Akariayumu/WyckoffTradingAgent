@@ -11,7 +11,7 @@ export async function buildSandboxTools(env: Env, userId: string, accessToken: s
   if (env.AGENT_SANDBOX_ENABLED !== 'true') return {}
   // Hide the tool from non-members so the model never proposes a run
   // that would only fail after the user has already approved it.
-  if (!(await isActivePlanetMember(createUserSupabase(env, accessToken), userId))) return {}
+  if (!(await isActivePlanetMember(createUserSupabase(env, accessToken), userId, env))) return {}
   return {
     run_python_research: tool({
       description: '将有限的 Python 研究计算排入无网络、无密钥、执行后删除的沙箱。只能在用户明确要求后使用；脚本仅可处理本轮已知的有限数据。工具会返回 runId，随后可查询短期保存的结果。',
@@ -27,6 +27,6 @@ export async function buildSandboxTools(env: Env, userId: string, accessToken: s
 
 async function runApprovedPythonResearch(env: Env, userId: string, accessToken: string, requestId: string, script: string) {
   const supabase = createUserSupabase(env, accessToken)
-  if (!(await isActivePlanetMember(supabase, userId))) throw new Error('Agent sandbox requires planet membership')
+  if (!(await isActivePlanetMember(supabase, userId, env))) throw new Error('Agent sandbox requires planet membership')
   return enqueuePythonResearch(env, userId, script, { requestId })
 }

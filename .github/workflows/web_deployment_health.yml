@@ -17,14 +17,16 @@ concurrency:
 jobs:
   verify:
     if: >-
+      vars.WYCKOFF_API_BASE != '' && vars.WYCKOFF_WEB_BASE != '' && (
       github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+      github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 8
     env:
-      API_HEALTH_URL: https://wyckoff-api.yongkai-wang.workers.dev/api/health
-      API_REMOTE_URL: https://wyckoff-api.yongkai-wang.workers.dev/api/remote/devices
-      CHAT_URL: https://wyckoff-analysis.pages.dev/chat
+      # 自部署：地址来自仓库 Variables WYCKOFF_API_BASE / WYCKOFF_WEB_BASE。
+      API_HEALTH_URL: ${{ vars.WYCKOFF_API_BASE }}/api/health
+      API_REMOTE_URL: ${{ vars.WYCKOFF_API_BASE }}/api/remote/devices
+      CHAT_URL: ${{ vars.WYCKOFF_WEB_BASE }}/chat
     steps:
       - name: Wait for production endpoints
         shell: bash

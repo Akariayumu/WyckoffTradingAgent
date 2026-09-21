@@ -162,7 +162,7 @@ def _cmd_update(_args):
     try:
         subprocess.check_call(_upgrade_package_cmd())
         _ensure_playwright_chromium()
-        url = "https://wyckoff-analysis.pages.dev/"
+        url = os.environ.get("WYCKOFF_WEB_BASE", "https://wyckoff-analysis.pages.dev").rstrip("/") + "/"
         try:
             subprocess.run(["pbcopy"], input=url.encode(), check=True)
         except FileNotFoundError:

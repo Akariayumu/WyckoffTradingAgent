@@ -28,7 +28,7 @@ remoteRoutes.get('/ws', async (c) => {
   if (!token) return c.json({ error: 'Unauthorized' }, 401)
   const userId = await resolveUserId(c.env, token)
   if (!userId) return c.json({ error: 'Invalid token' }, 401)
-  if (!(await isActivePlanetMember(createUserSupabase(c.env, token), userId))) {
+  if (!(await isActivePlanetMember(createUserSupabase(c.env, token), userId, c.env))) {
     return c.json({ error: 'Planet membership required' }, 403)
   }
   // role / label / code 走 query，转交时原样带上 —— DO 负责校验配对码。

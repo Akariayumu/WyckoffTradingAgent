@@ -60,11 +60,12 @@ jobs:
     timeout-minutes: 15
     environment:
       name: cloudflare-production
-      url: https://wyckoff-api.yongkai-wang.workers.dev/api/health
+      url: ${{ vars.WYCKOFF_API_BASE }}/api/health
     env:
-      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID || '6e64f92dd0779528d2a5ca8498ab5654' }}
+      # 自部署：账号 ID 和 API 地址都从仓库 Variables 读取，不再回退到作者的部署。
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      API_BASE_URL: https://wyckoff-api.yongkai-wang.workers.dev
+      API_BASE_URL: ${{ vars.WYCKOFF_API_BASE }}
       DEPLOY_SHA: ${{ needs.changes.outputs.sha }}
     steps:
       - uses: actions/checkout@v7
@@ -75,6 +76,10 @@ jobs:
         run: |
           if [[ -z "$CLOUDFLARE_API_TOKEN" ]]; then
             echo "CLOUDFLARE_API_TOKEN is not configured for cloudflare-production." >&2
+            exit 1
+          fi
+          if [[ -z "$CLOUDFLARE_ACCOUNT_ID" || -z "$API_BASE_URL" ]]; then
+            echo "Repository variables CLOUDFLARE_ACCOUNT_ID and WYCKOFF_API_BASE must be set." >&2
             exit 1
           fi
       - uses: pnpm/action-setup@v4.4.0

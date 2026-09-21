@@ -1,6 +1,7 @@
 'use strict'
 
-const LATEST_URL = 'https://wyckoff-analysis.pages.dev/desktop/latest'
+// 自部署：WYCKOFF_DESKTOP_LATEST_URL 覆盖更新检查地址；设为空字符串则关闭检查。
+const LATEST_URL = process.env.WYCKOFF_DESKTOP_LATEST_URL ?? 'https://wyckoff-analysis.pages.dev/desktop/latest'
 const RELEASE_PREFIX = '/YoungCan-Wang/WyckoffTradingAgent/releases/'
 
 function versionParts (value) {
@@ -28,6 +29,7 @@ function isAllowedReleaseUrl (value) {
 }
 
 async function checkForDesktopUpdate (fetchImpl, currentVersion) {
+  if (!LATEST_URL.trim()) return { ok: false, currentVersion }
   try {
     const response = await fetchImpl(LATEST_URL)
     if (!response.ok) return { ok: false, currentVersion }

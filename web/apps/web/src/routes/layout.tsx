@@ -8,6 +8,7 @@ import { usePreferences, type Locale, type TranslationKey } from '@/lib/preferen
 import { trackRouteActivity } from '@/lib/activity'
 import { installPlanetMemberClarity } from '@/lib/product-analytics'
 import { usePlanetMembership } from '@/lib/planet-membership-gate'
+import { planetMembershipDisabled } from '@/lib/planet-membership'
 
 const navGroups = [
   {
@@ -297,7 +298,7 @@ function SidebarNavigation({ collapsed, location }: { collapsed: boolean; locati
       {navGroups.map((group) => (
         <div key={group.titleKey} className={collapsed ? 'space-y-0.5' : 'space-y-1'}>
           {!collapsed && <div className="px-3 pt-3 pb-1 text-[9px] font-extrabold text-muted-foreground/60 uppercase tracking-widest select-none">{t(group.titleKey)}</div>}
-          {group.items.map((item) => <SidebarNavLink key={item.to} item={item} collapsed={collapsed} location={location} />)}
+          {group.items.filter((item) => !(item.to === '/membership' && planetMembershipDisabled())).map((item) => <SidebarNavLink key={item.to} item={item} collapsed={collapsed} location={location} />)}
         </div>
       ))}
     </nav>

@@ -1,6 +1,7 @@
 const CF_BEACON_ID = 'cf-web-analytics'
 const CLARITY_SCRIPT_ID = 'ms-clarity'
-export const DEFAULT_CLARITY_PROJECT_ID = 'y6albpfin1'
+// 自部署：默认不加载 Clarity（原默认值是作者的项目），需要时设置 VITE_CLARITY_PROJECT_ID。
+export const DEFAULT_CLARITY_PROJECT_ID = ''
 
 export function cloudflareWebAnalyticsToken(): string {
   return String(import.meta.env.VITE_CF_WEB_ANALYTICS_TOKEN || '').trim()

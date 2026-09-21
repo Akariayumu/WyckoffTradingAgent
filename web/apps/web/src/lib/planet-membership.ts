@@ -9,7 +9,13 @@ export interface PlanetMembership {
   joinedAt: string | null
 }
 
+/** 自部署开关：VITE_MEMBERSHIP_MODE=off 时所有登录用户视为会员（需与 Worker 的 MEMBERSHIP_MODE 一致）。 */
+export function planetMembershipDisabled(mode: unknown = import.meta.env.VITE_MEMBERSHIP_MODE): boolean {
+  return String(mode ?? '').trim().toLowerCase() === 'off'
+}
+
 export async function getPlanetMembership(userId: string): Promise<PlanetMembership> {
+  if (planetMembershipDisabled()) return { isActive: true, expiresOn: null, joinedAt: null }
   const { data, error } = await supabase
     .from('planet_members')
     .select('created_at, expires_on')

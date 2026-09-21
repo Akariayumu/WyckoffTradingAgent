@@ -3,19 +3,27 @@ import {
 } from '../../../packages/shared/src/gemini-sse-normalize'
 import { ALLOWED_PROXY_TARGET_ORIGINS } from '../../../packages/shared/src/constants'
 
-const ALLOWED_ORIGINS = new Set([
+const DEFAULT_ALLOWED_ORIGINS = [
   'https://wyckoff-analysis.pages.dev',
   'https://wyckoff.pages.dev',
   'http://localhost:5173',
   'http://127.0.0.1:5173',
-])
+]
+
+type LlmProxyEnv = { CORS_ALLOWED_ORIGINS?: string }
+
+// 自部署：同源请求（自己的 Pages 域名）总是允许，另可用 CORS_ALLOWED_ORIGINS 追加逗号分隔的来源。
+function allowedOrigins(request: Request, env: LlmProxyEnv | undefined): Set<string> {
+  const extra = (env?.CORS_ALLOWED_ORIGINS || '').split(',').map((value) => value.trim().replace(/\/+$/, '')).filter(Boolean)
+  return new Set([...DEFAULT_ALLOWED_ORIGINS, new URL(request.url).origin, ...extra])
+}
 const ALLOWED_METHODS = new Set(['GET', 'POST', 'OPTIONS'])
 const MAX_BODY_BYTES = 2 * 1024 * 1024
 const UPSTREAM_TIMEOUT_MS = 60_000
 
-function corsHeaders(origin: string | null): Record<string, string> {
+function corsHeaders(origin: string | null, allowed: Set<string>): Record<string, string> {
   return {
-    ...(origin && ALLOWED_ORIGINS.has(origin) ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {}),
+    ...(origin && allowed.has(origin) ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {}),
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'authorization, content-type, accept, x-api-key, anthropic-version, x-target-url',
   'Access-Control-Max-Age': '86400',
@@ -81,12 +89,13 @@ function buildOneRouteChatBody(body: ArrayBuffer, contentType: string): BodyInit
   }
 }
 
-export const onRequest: PagesFunction = async (context) => {
+export const onRequest: PagesFunction<LlmProxyEnv> = async (context) => {
   const { request } = context
   const origin = request.headers.get('Origin')
-  const cors = corsHeaders(origin)
+  const allowed = allowedOrigins(request, context.env)
+  const cors = corsHeaders(origin, allowed)
 
-  if (origin && !ALLOWED_ORIGINS.has(origin)) {
+  if (origin && !allowed.has(origin)) {
     return Response.json({ error: 'Origin is not allowed' }, { status: 403 })
   }
   if (!ALLOWED_METHODS.has(request.method)) {

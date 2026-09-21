@@ -27,4 +27,11 @@ describe('sandbox tool registration', () => {
     const tools = await buildSandboxTools({ AGENT_SANDBOX_ENABLED: 'true' }, 'user-1', 'token', 'request-1')
     expect(Object.keys(tools)).toEqual(['run_python_research'])
   })
+
+  it('passes env through so MEMBERSHIP_MODE can take effect', async () => {
+    membership.mockResolvedValueOnce(true)
+    const env = { AGENT_SANDBOX_ENABLED: 'true', MEMBERSHIP_MODE: 'off' }
+    await buildSandboxTools(env, 'user-1', 'token', 'request-1')
+    expect(membership).toHaveBeenLastCalledWith(expect.anything(), 'user-1', env)
+  })
 })

@@ -12,8 +12,6 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
-from integrations.supabase_public_config import SUPABASE_ANON_KEY, SUPABASE_ANON_URL
-
 logger = logging.getLogger(__name__)
 
 SESSION_DIR = Path.home() / ".wyckoff"
@@ -295,7 +293,11 @@ def _get_timeout_seconds(key: str, config: dict[str, Any] | None = None) -> int:
 def _create_client():
     from supabase import create_client
 
-    return create_client(SUPABASE_ANON_URL, SUPABASE_ANON_KEY)
+    from integrations.supabase_base import resolve_credentials
+
+    # 自部署：优先 SUPABASE_URL / SUPABASE_KEY，未设置时才回退到内置 anon 配置。
+    url, key = resolve_credentials()
+    return create_client(url, key)
 
 
 def _invalid_session_error(exc: Exception) -> bool:
