@@ -20,6 +20,15 @@ describe('dispatchScheduledWorkflow', () => {
     expect(JSON.parse(init.body as string)).toEqual({ ref: 'main' })
   })
 
+  it('maps the premarket cron to premarket_risk.yml', async () => {
+    const fetchImpl = vi.fn(async () => new Response(null, { status: 204 }))
+
+    await dispatchScheduledWorkflow('20 0 * * MON-FRI', env, fetchImpl)
+
+    const [url] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe('https://api.github.com/repos/owner/repo/actions/workflows/premarket_risk.yml/dispatches')
+  })
+
   it('defaults the ref to self-host', async () => {
     const fetchImpl = vi.fn(async () => new Response(null, { status: 204 }))
 

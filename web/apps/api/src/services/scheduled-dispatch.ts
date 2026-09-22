@@ -5,6 +5,8 @@ import type { Env } from '../app'
 export const SCHEDULED_WORKFLOWS: Record<string, string> = {
   // 北京时间周日到周四 17:17，与 wyckoff_funnel.yml 原 schedule 一致。
   '17 9 * * SUN-THU': 'wyckoff_funnel.yml',
+  // 北京时间工作日 08:20：premarket_risk.yml 的设计主路径就是外部 dispatch，schedule 只带 --backstop 兜底。
+  '20 0 * * MON-FRI': 'premarket_risk.yml',
 }
 
 const DEFAULT_REF = 'self-host'
