@@ -13,7 +13,8 @@ invocation_logs = true
 
 [vars]
 ENVIRONMENT = "production"
-CHAT_DAILY_LIMIT_PER_USER = "80"
+# 自部署：LLM 用的是自己的 Key，80 次/天是上游共享服务的成本控制，这里放宽。
+CHAT_DAILY_LIMIT_PER_USER = "1000"
 CHAT_MIN_INTERVAL_MS = "2500"
 # 自部署：off 时跳过星球会员校验（仍要求登录）；删掉或设为其他值恢复会员限制。
 MEMBERSHIP_MODE = "off"
