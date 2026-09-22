@@ -45,5 +45,5 @@ export async function dispatchScheduledWorkflow(
     // 抛出让 Cron 记为失败，在 Workers Logs 里可见；GitHub 侧的 schedule 仍会兜底。
     throw new Error(`[scheduled-dispatch] ${workflow} 触发失败：${response.status} ${await response.text()}`)
   }
-  console.log(`[scheduled-dispatch] 已触发 ${repo}/${workflow}@${ref}`)
+  console.info(`[scheduled-dispatch] 已触发 ${repo}/${workflow}@${ref}`)
 }
