@@ -3,6 +3,8 @@ name: Wyckoff Funnel
 on:
   schedule:
     # 北京时间周日到周四 17:17（UTC 9:17），为下一交易日做盘后准备。
+    # 准点触发改由 Worker Cron 发 workflow_dispatch（web/apps/api/wrangler.toml）；
+    # 这里的 schedule 常晚好几个小时，只作兜底，当天已有 dispatch 就由 gate 跳过。
     - cron: '17 9 * * 0-4'
   workflow_dispatch:
     inputs:
@@ -13,13 +15,46 @@ on:
 
 concurrency:
   group: step4-oms-a-share-${{ github.ref }}
-  cancel-in-progress: true
+  # 迟到的兜底 schedule 不能把正在跑的 dispatch 取消掉：它排队等前一个跑完，再由 gate 判断是否重复。
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 permissions:
   contents: read
 
 jobs:
+  gate:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - name: Skip schedule if already dispatched today
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" != "schedule" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # 回看 12 小时而不是按自然日：兜底 run 可能晚到过零点，仍要认出同一轮 17:17 的 dispatch；
+          # 12 小时也不会误认前一天的那次。有未失败的 dispatch（成功或还在跑）就跳过。
+          since="$(date -u -d '12 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
+          n="$(gh run list -R "$REPO" --workflow wyckoff_funnel.yml --event workflow_dispatch \
+            --created ">=$since" --limit 20 --json status,conclusion \
+            --jq '[.[] | select(.status != "completed" or .conclusion == "success")] | length')"
+          echo "自 $since 起已有 $n 个有效的 workflow_dispatch run"
+          if [ "$n" -gt 0 ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
   run:
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     env:
       PYTHONUNBUFFERED: "1"

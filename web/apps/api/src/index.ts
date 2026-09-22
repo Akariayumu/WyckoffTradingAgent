@@ -5,6 +5,7 @@ import { remoteRoutes } from './routes/remote'
 import { settingsRoutes } from './routes/settings'
 import { workerChatRoutes } from './routes/worker-chat'
 import { handleAgentRunQueue } from './services/agent-run-queue'
+import { dispatchScheduledWorkflow } from './services/scheduled-dispatch'
 import type { AgentRunMessage } from './services/agent-run'
 import type { Env } from './app'
 import { missingWorkerRuntimeSecrets } from './services/runtime-readiness'
@@ -23,4 +24,5 @@ app.route('/api/remote', remoteRoutes)
 export default {
   fetch: app.fetch,
   queue: (batch, env) => handleAgentRunQueue(batch, env),
+  scheduled: (controller, env) => dispatchScheduledWorkflow(controller.cron, env),
 } satisfies ExportedHandler<Env, AgentRunMessage>

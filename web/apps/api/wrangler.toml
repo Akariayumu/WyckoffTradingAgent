@@ -27,6 +27,14 @@ AGENT_RUN_DAILY_CPU_LIMIT_MS = "120000"
 AGENT_RUN_MIN_INTERVAL_MS = "10000"
 # SANDBOX_BRIDGE_URL 指向自己的 bridge（必须 HTTPS），原值是作者的 Vercel 部署。
 SANDBOX_BRIDGE_URL = ""
+# Cron 触发 GitHub workflow 的目标仓库；Token 用 `wrangler secret put GITHUB_DISPATCH_TOKEN`。
+GITHUB_DISPATCH_REPO = "Akariayumu/WyckoffTradingAgent"
+GITHUB_DISPATCH_REF = "self-host"
+
+# GitHub Actions 的 schedule 常晚好几个小时，由这里准点触发（UTC）。
+# 新增表达式要同步登记到 src/services/scheduled-dispatch.ts 的 SCHEDULED_WORKFLOWS。
+[triggers]
+crons = ["17 9 * * SUN-THU"]
 
 [[durable_objects.bindings]]
 name = "AGENT_RUN_NOTIFIER"

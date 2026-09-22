@@ -33,6 +33,10 @@ export type Env = {
   SANDBOX_BRIDGE_SECRET?: string
   /** 'off' 时跳过星球会员校验（自部署用），登录鉴权不受影响。 */
   MEMBERSHIP_MODE?: string
+  // Worker Cron 触发 GitHub workflow_dispatch 用（见 services/scheduled-dispatch.ts）。
+  GITHUB_DISPATCH_TOKEN?: string
+  GITHUB_DISPATCH_REPO?: string
+  GITHUB_DISPATCH_REF?: string
   /** 逗号分隔的额外 CORS 来源，例如自己的 Pages 域名。 */
   CORS_ALLOWED_ORIGINS?: string
   /** 可选：Tushare 兼容中转地址（https），读盘室工具发往官方 Tushare 的请求改投此处。 */
