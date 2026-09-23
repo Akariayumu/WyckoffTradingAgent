@@ -403,6 +403,7 @@ flowchart LR
 | 名词 | 含义 |
 |------|------|
 | **调度 daemon** | `wyckoff daemon --foreground` 常驻进程，由 macOS launchd 保活（`com.wyckoff.daemon`）。读 `~/.wyckoff/schedules.json`，每分钟检查 cron 是否到期。UI 关闭后定时任务仍会跑；这是它与 TUI 内 60 秒定时器的根本区别。 |
+| **Worker 定时派发** | `wyckoff-api` 的单条每分钟 Cron Trigger 按 UTC 计划时刻匹配生产任务，向 GitHub Actions 发送 `workflow_dispatch`；时间表在 `web/apps/api/src/services/scheduled-dispatch.ts`。A 股漏斗和盘前风控另有 GitHub `schedule` 兜底。 |
 | **单例锁** | `~/.wyckoff/daemon.lock` 上的 `fcntl.flock`。用 flock 而非 PID 文件，因为 PID 会被系统回收从而误判进程存活。daemon 持锁期间 TUI 检测到后**让出调度权**，只做展示，避免重复触发和 `last_fired` 互相覆盖。 |
 | **补跑（catch-up）** | 定时器被长任务拖延时，`pending_check_minutes` 回溯最多 15 分钟内被跳过的 cron 分钟并补触发。上次已检查的那一分钟不再重算，避免同一任务触发两次。 |
 | **auto（自动放行）** | 写操作风险分级最低档，按**工具身份**而非参数字段判定：目前仅 `set_stop_loss`。安全性来自该工具签名只接受 `code` / `stop_loss` / `items`，根本不能改股数、成本或现金；靠「检查参数里没有别的字段」防不住批量 `items` 把动作藏在数组里。`update_portfolio` 永远不是 auto。 |

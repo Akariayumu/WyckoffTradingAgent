@@ -16,7 +16,7 @@ flowchart TB
         U2["环境变量 / Secrets<br/>TICKFLOW / TUSHARE / LLM / Supabase / IM"]
         U3["本地元数据<br/>行业映射 / 概念映射 / 股票池"]
         U4["前日反馈闭环<br/>signal_health_daily<br/>signal_registry"]
-        U5["前日盘前风控<br/>Codex Automation → workflow_dispatch<br/>premarket_risk → market_signal_daily"]
+        U5["前日盘前风控<br/>Worker Cron → workflow_dispatch<br/>premarket_risk → market_signal_daily"]
         U8["当日 16:05 净值快照<br/>nav_snapshot → daily_nav<br/>含账本/逐只当日盈亏"]
         U6["前日漏斗产出<br/>signal_pending 待确认信号"]
         U7["外部观察名单<br/>profile / env / symbols_file"]
@@ -35,7 +35,7 @@ flowchart TB
 
     subgraph DOWNSTREAM["⬇️ 下游（漏斗运行后消费）"]
         D1["23:30 signal_feedback_job<br/>计算 outcomes / health / registry"]
-        D2["次日 08:20 Codex Automation<br/>触发 premarket_risk<br/>Step4 买入门控"]
+        D2["次日 08:20 Worker Cron<br/>触发 premarket_risk<br/>Step4 买入门控"]
         D3["次日开盘价附近买入<br/>漏斗候选行内联展示 signal_pending"]
         D4["Web / CLI / MCP<br/>chat-agent 工具调用"]
         D5["回测 backtest_runner<br/>读 funnel_snapshots"]
@@ -484,8 +484,8 @@ sequenceDiagram
 ## 八、上下游相对顺序
 
 盘前风险是 Step4 的上游门控；次日开盘价附近买入消费已确认候选；盘后漏斗产出下一交易日观察池；重定价与 feedback
-在漏斗之后更新复盘数据；maintenance 最后清理滑动窗口。具体北京时间、cron 和完整工作流清单只在
-[`ARCHITECTURE.md`](ARCHITECTURE.md#github-actions-主要工作流) 与 `.github/workflows/` 维护。
+在漏斗之后更新复盘数据；maintenance 清理滑动窗口。各任务的计划时刻由 Worker 的
+`scheduled-dispatch.ts` 维护；完整工作流清单见 [`ARCHITECTURE.md`](ARCHITECTURE.md#github-actions-主要工作流)。
 
 ---
 
@@ -589,8 +589,8 @@ efinance
 排查顺序：看到 `⛑️ 禁买源自数据缺失` 就手动补跑 `premarket_risk`（或检查 `market_signal_daily`
 当日行的 `benchmark_regime`），再重跑 Step4。
 
-盘前那一半另有 `schedule` 兜底（UTC 02:20 工作日，带 `--backstop` 幂等短路）：外部
-`workflow_dispatch` 触发器实测连续 4 个周一周二未触发，而周一周二恰是 Step4 出单最多的两天。
+盘前那一半另有 `schedule` 兜底（UTC 02:20 工作日，带 `--backstop` 幂等短路）：历史外部
+`workflow_dispatch` 触发器曾连续 4 个周一周二未触发，而周一周二恰是 Step4 出单最多的两天。主路径现由 Worker Cron 派发。
 兜底只在当日盘前态缺失且当天是交易日时才干活，触发正常的日子秒退，不会多推一条飞书。
 
 ---

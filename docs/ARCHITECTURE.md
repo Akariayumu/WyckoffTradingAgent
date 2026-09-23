@@ -815,14 +815,16 @@ MCP server 走 ToolSurface，没有确认弹窗也没有待批队列。`tools/wr
 
 ### GitHub Actions 主要工作流
 
+生产定时任务由 `wyckoff-api` Worker 的单条每分钟 Cron Trigger 派发。`web/apps/api/src/services/scheduled-dispatch.ts` 按 Cloudflare 传入的 UTC 计划时刻匹配日、周、月任务，并用 `GITHUB_DISPATCH_TOKEN` 向 `GITHUB_DISPATCH_REPO` 的 `GITHUB_DISPATCH_REF` 发送 `workflow_dispatch`。时间表与 `web/apps/api/wrangler.toml` 一起部署；GitHub Actions 保留手动入口。A 股漏斗和盘前风控另保留原有 GitHub `schedule` 作为幂等兜底。Cloudflare 免费账户最多 5 条 Cron Trigger，因此这里只占 1 条。Worker 派发失败会记录在 Workers Logs；检查实际执行结果仍以 GitHub Actions run 状态为准。
+
 | 工作流 | 时间（北京） | 说明 |
 |-------|-------------|------|
 | **CI** (`ci.yml`) | push/PR | 单次 coverage-instrumented pytest + Python compile + TypeScript check + Web/API tests + dry-run；同一次 Python 测试生成覆盖率 artifact，不重复执行全量套件 |
-| **Worker 自动部署** (`worker_deploy.yml`) | main CI 成功后 / 手动 | 仅 Worker 运行时输入变化时部署精确 CI SHA；检查 Durable Object binding、迁移和远程路由 |
+| **Worker 自动部署** (`worker_deploy.yml`) | main / self-host CI 成功后 / 手动 | 仅 Worker 运行时输入变化时部署精确 CI SHA；检查 Durable Object binding、迁移和远程路由 |
 | **Web 部署健康检查** (`web_deployment_health.yml`) | Worker deploy 完成后 / 手动 | 从 GitHub runner 轮询 Worker `/api/health`、远程路由与 Pages `/chat`；不调用已登录接口或创建沙箱 |
 | **Desktop** (`desktop.yml`) | desktop 相关 push/PR / 手动触发 / `desktop-v*` tag | push/PR 只跑三平台 Electron 测试；手动触发才构建 1 天候选包；tag 与 package version 一致时以 Windows 未签名 / macOS 临时签名的零付费方式校验并发布 GitHub Release |
 | **大型 Artifact 清理** (`artifact_cleanup.yml`) | 每天 03:30 / 手动 | 删除超过 24 小时且至少 50 MB 的 Actions artifacts；桌面工作流自身保留期固定为 1 天 |
-| **盘前风控** (`premarket_risk.yml`) | 周一-周五 08:20 | Codex Automation 调用 `workflow_dispatch`；A50 + VIX 预警，Actions 可手动补跑。另有 UTC 02:20 的 `schedule` 兜底，带 `--backstop` 幂等短路，仅在当日盘前态缺失时补跑 |
+| **盘前风控** (`premarket_risk.yml`) | 周一-周五 08:20 | Worker 派发 `workflow_dispatch`；A50 + VIX 预警，Actions 可手动补跑。另有 UTC 02:20 的 `schedule` 兜底，带 `--backstop` 幂等短路，仅在当日盘前态缺失时补跑 |
 | **账户净值快照** (`nav_snapshot.yml`) | 周一-周五 16:05 | `nav_snapshot_job.py` 写 `daily_nav`：真实现金、持仓市值、账本与逐只当日盈亏（vs 昨收；昨收缺失才 vs 今开成本）。不改股数/现金/止损，不发买卖信号。实盘日预警是随后 Step4 的 Telegram 工单，会回读这张快照 |
 | **港股漏斗筛选** (`wyckoff_funnel_hk.yml`) | 周一-周五 16:35 | `market_funnel_job.py --market hk` |
 | **A 股漏斗筛选 + AI 研报 + 决策** (`wyckoff_funnel.yml`) | 周日-周四 17:17 | `daily_job.py` Step2→3→4；周日正常为周一实盘准备候选，若次日非 A 股交易日才跳过，日频写入 `theme_radar_snapshot` |

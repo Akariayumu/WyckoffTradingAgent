@@ -1,9 +1,6 @@
 name: Artifact Cleanup
 
 on:
-  schedule:
-    # 北京时间每天 03:30，清理已给验收留出一天窗口的大型 Actions artifacts。
-    - cron: "30 19 * * *"
   workflow_dispatch:
 
 concurrency:

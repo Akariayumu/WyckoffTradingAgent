@@ -1,9 +1,6 @@
 name: DB Maintenance
 
 on:
-  schedule:
-    # 北京时间每周六 06:20（UTC+8），在周五美股收盘后执行。
-    - cron: "20 22 * * 5"
   workflow_dispatch:
 
 concurrency:

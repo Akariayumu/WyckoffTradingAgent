@@ -32,10 +32,6 @@ name: Trigger Eval
 #   3) top10 与 top20 的不对称 —— 负号只在集中持仓档成立，宽档不显著，别外推。
 # 触发面板要逐票逐日重放六个检测器（约 90 分钟）且需 210 个 bar 预热，故与行情一起缓存。
 on:
-  schedule:
-    # UTC 周六 03:35 = 北京时间周六 11:35，与 ranker-weight（02:55）错开取数配额。
-    # 错开只为分摊配额,不构成先后 —— 上面头部记的就是踩过这一脚的经过。
-    - cron: "35 3 * * 6"
   workflow_dispatch:
     inputs:
       horizon:

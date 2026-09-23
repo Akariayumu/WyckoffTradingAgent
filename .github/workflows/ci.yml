@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, feature/visible]
+    branches: [main, self-host, feature/visible]
     paths:
       - "**.py"
       - "pyproject.toml"
@@ -15,7 +15,7 @@ on:
       - ".github/workflows/**"
       - "web/**"
   pull_request:
-    branches: [main, feature/visible]
+    branches: [main, self-host, feature/visible]
     paths:
       - "**.py"
       - "pyproject.toml"

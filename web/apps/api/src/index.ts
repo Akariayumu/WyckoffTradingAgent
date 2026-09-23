@@ -24,5 +24,5 @@ app.route('/api/remote', remoteRoutes)
 export default {
   fetch: app.fetch,
   queue: (batch, env) => handleAgentRunQueue(batch, env),
-  scheduled: (controller, env) => dispatchScheduledWorkflow(controller.cron, env),
+  scheduled: (controller, env) => dispatchScheduledWorkflow(controller.cron, controller.scheduledTime, env),
 } satisfies ExportedHandler<Env, AgentRunMessage>

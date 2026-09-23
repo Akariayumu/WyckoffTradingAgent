@@ -6,9 +6,6 @@ name: Daily NAV Snapshot
 # 根因是净值快照挂在 Step4 的工单写入之后，信号链路一挂账户估值就跟着消失。
 # 本作业独立运行，与漏斗成败无关。
 on:
-  schedule:
-    # UTC 08:05 周一至周五 = 北京时间 16:05，A 股收盘后、早于其它盘后任务。
-    - cron: "5 8 * * 1-5"
   workflow_dispatch:
     inputs:
       date:

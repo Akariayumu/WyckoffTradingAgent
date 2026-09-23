@@ -3,7 +3,7 @@ name: Worker deploy
 on:
   workflow_run:
     workflows: [CI]
-    branches: [main]
+    branches: [main, self-host]
     types: [completed]
   workflow_dispatch:
 
@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.workflow_run.head_sha || 'main' }}
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 2
       - name: Resolve deployment commit
         id: ref

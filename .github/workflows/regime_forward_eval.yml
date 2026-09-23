@@ -5,9 +5,6 @@ name: Regime Forward Evaluation
 # 而实测 CRASH 之后市场偏涨（超基准 +1.12pct、p=0.015）。三个月样本说不了话，
 # 所以每周重跑一次，看结论能否跨周期稳定，再决定要不要动生产开关。
 on:
-  schedule:
-    # UTC 周六 01:40 = 北京时间周六 09:40。周末跑：本周数据已收全，且不与工作日任务争资源。
-    - cron: "40 1 * * 6"
   workflow_dispatch:
     inputs:
       horizon:

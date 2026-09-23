@@ -77,7 +77,7 @@ A 股主漏斗使用本地股票池和行业映射；港股、美股、ETF 的�
 
 ### 盘前风控
 
-工作日 08:20（北京时间）由 Codex Automation 触发 `premarket_risk.yml` 的 `workflow_dispatch`，
+工作日 08:20（北京时间）由 Worker Cron 触发 `premarket_risk.yml` 的 `workflow_dispatch`，
 监测 A50 期指和 VIX 并判定四档风险；任一关键输入缺失且现有输入尚未触发硬拦截时，额外进入
 `UNKNOWN` 数据闸门。Actions 页面可手动补跑。
 
